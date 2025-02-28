@@ -6,25 +6,46 @@ const { generateToken } = require("../utils/generateToken");
 module.exports.registerUser = async function (req, res) {
   try {
     let { email, password, fullname } = req.body;
-    let user = await userModal.findOne({ email: email });
-    if (user) return res.status(401).send("Your account already exist");
+
+    // Check if user already exists
+    let user = await userModal.findOne({ email });
+    if (user) {
+      return res.status(401).json({ message: "Your account already exists" });
+    }
+
+    // Hash password
     bcrypt.genSalt(10, function (err, salt) {
+      if (err) {
+        console.error("Error generating salt:", err);
+        return res.status(500).json({ message: "Server error. Try again." });
+      }
+
       bcrypt.hash(password, salt, async function (err, hash) {
-        if (err) return res.send(err.message);
-        else {
-          let user = await userModal.create({
+        if (err) {
+          console.error("Error hashing password:", err);
+          return res.status(500).json({ message: "Error hashing password." });
+        }
+
+        try {
+          let newUser = await userModal.create({
             email,
             password: hash,
             fullname,
           });
-          let token = generateToken(user);
-          res.cookie("token", token);
-          res.send("user created successfully");
+
+          let token = generateToken(newUser);
+          res.cookie("token", token, { httpOnly: true });
+
+          return res.status(201).json({ message: "User created successfully", token });
+        } catch (dbError) {
+          console.error("Error saving user:", dbError);
+          return res.status(500).json({ message: "Database error. Try again." });
         }
       });
     });
   } catch (err) {
-    console.log(err.message);
+    console.error("Server Error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 module.exports.loginUser = async function (req, res) {

@@ -4,6 +4,9 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const expressSession = require("express-session");
 const flash = require("connect-flash");
+const cors = require("cors");
+app.use(cors({ origin: "http://localhost:5174", credentials: true }));
+
 
 require("dotenv").config();
 const db = require("./config/mongoose-connection");
