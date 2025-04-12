@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const { Transaction } = require("../modals/credit_debit");
 const { Profit } = require("../modals/profit");
+const {authenticate} = require("../middlewares/authenticate");
 
 async function updateProfit(userId) {
   try {
@@ -33,20 +34,13 @@ async function updateProfit(userId) {
   }
 }
 
-router.post("/add", async (req, res) => {
+router.post("/add", authenticate, async (req, res) => {
   try {
-    const { userId, type, amount, description, date } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID format" });
-    }
-
-    if (!["credit", "debit"].includes(type.toLowerCase())) {
-      return res.status(400).json({ error: "Invalid transaction type" });
-    }
+    const userId = req.user._id;
+    const { type, amount, description, date } = req.body;
 
     const transaction = new Transaction({
-      userId: new mongoose.Types.ObjectId(userId),
+      userId,
       type: type.toLowerCase(),
       amount,
       description: description || "",
@@ -55,13 +49,28 @@ router.post("/add", async (req, res) => {
 
     await transaction.save();
     await updateProfit(userId);
+    
+    const profitDoc = await Profit.findOne({ userId });
+
+    if (!profitDoc) {
+      return res.status(500).json({ error: "Profit document not found" });
+    }
 
     res.status(201).json({
-      message: "Transaction added successfully",
-      transaction,
-      profit: await Profit.findOne({ userId: new mongoose.Types.ObjectId(userId) }),
+      transaction: {
+        _id: transaction._id,
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+        date: transaction.date,
+      },
+      profit: { 
+        totalCredit: profitDoc.totalCredit, 
+        totalDebit: profitDoc.totalDebit,
+      }
     });
   } catch (error) {
+    console.error("Error in /add transaction:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

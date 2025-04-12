@@ -7,69 +7,54 @@ module.exports.registerUser = async function (req, res) {
   try {
     let { email, password, fullname } = req.body;
 
-    // Check if user already exists
-    let user = await userModal.findOne({ email });
-    if (user) {
+    let existingUser = await userModal.findOne({ email });
+    if (existingUser) {
       return res.status(401).json({ message: "Your account already exists" });
     }
 
-    // Hash password
-    bcrypt.genSalt(10, function (err, salt) {
-      if (err) {
-        console.error("Error generating salt:", err);
-        return res.status(500).json({ message: "Server error. Try again." });
-      }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      bcrypt.hash(password, salt, async function (err, hash) {
-        if (err) {
-          console.error("Error hashing password:", err);
-          return res.status(500).json({ message: "Error hashing password." });
-        }
-
-        try {
-          let newUser = await userModal.create({
-            email,
-            password: hash,
-            fullname,
-          });
-
-          let token = generateToken(newUser);
-          res.cookie("token", token, { httpOnly: true });
-
-          return res.status(201).json({ message: "User created successfully", token });
-        } catch (dbError) {
-          console.error("Error saving user:", dbError);
-          return res.status(500).json({ message: "Database error. Try again." });
-        }
-      });
+    let newUser = await userModal.create({
+      email,
+      password: hashedPassword,
+      fullname,
     });
+
+    let token = generateToken(newUser);
+    res.cookie("token", token, { httpOnly: true });
+
+    return res.status(201).json({ message: "User created successfully", token });
   } catch (err) {
     console.error("Server Error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 module.exports.loginUser = async function (req, res) {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
+
     const user = await userModal.findOne({ email });
     if (!user) {
-      return res.status(401).json({ error: "Email or password incorrect" });
+      return res.status(401).json({ error: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Email or password incorrect" });
+      return res.status(401).json({ error: "Invalid email or password" });
     }
 
     const token = generateToken(user);
-    const decoded = jwt.verify(token, process.env.JWT_KEY);
-      console.log(decoded);
+    res.cookie("token", token, { httpOnly: true });
 
-    res.json({
+    return res.json({
       message: "User logged in successfully",
-      token: token
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        fullname: user.fullname,
+      },
     });
-
   } catch (err) {
     console.error("Login Error:", err.message);
     res.status(500).json({ error: "Internal server error" });
@@ -78,8 +63,7 @@ module.exports.loginUser = async function (req, res) {
 
 module.exports.logoutUser = function (req, res) {
   res.clearCookie("token");
-  req.flash("success", "Logged out successfully");
-  res.send("logged out");
+  return res.json({ message: "Logged out successfully" });
 };
 
 

@@ -1,0 +1,95 @@
+PassengerAppRoot "/home/martendi/khatasystem.martendigitals.com"
+PassengerBaseURI "/"
+PassengerNodejs "/home/martendi/nodevenv/khatasystem.martendigitals.com/16/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+PassengerFriendlyErrorPages on
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+</IfModule>
+
+<FilesMatch "\.(env|htaccess|htpasswd|gitignore|gitattributes|config\.js|package(-lock)?\.json|composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes -MultiViews +FollowSymLinks
+
+<IfModule mod_headers.c>
+
+    SetEnvIf Origin "^https://khata\.martendigitals\.com$" CORS_ALLOW_ORIGIN=$0
+    Header always set Access-Control-Allow-Origin %{CORS_ALLOW_ORIGIN}e env=CORS_ALLOW_ORIGIN
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header always set Access-Control-Allow-Credentials "true"
+    
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+    
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://khatasystem.martendigitals.com https://khata.martendigitals.com; frame-ancestors 'self'"
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css application/json
+    AddOutputFilterByType DEFLATE application/javascript text/javascript
+    AddOutputFilterByType DEFLATE text/xml application/xml image/svg+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE font/opentype font/ttf font/eot font/woff
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-font-ttf "access plus 1 year"
+    ExpiresByType font/opentype "access plus 1 year"
+    ExpiresByType application/x-font-woff "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresDefault "access plus 2 days"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    RewriteCond %{HTTP_HOST} ^khatasystem\.martendigitals\.com$ [NC]
+    RewriteCond %{REQUEST_URI} !^/api/
+    RewriteRule ^ https://khata.martendigitals.com%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+ErrorDocument 403 "403 Forbidden - API access only"
+ErrorDocument 404 "404 Not Found - Invalid API route"
+ErrorDocument 500 "500 Server Error - Contact support"
+
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (harmfulbot|badbot|spambot|nmap|nikto|wget|curl|libwww-perl) [NC,OR]
+    RewriteCond %{QUERY_STRING} (base64_encode|localhost|loopback|127\.0\.0\.1) [NC,OR]
+    RewriteCond %{QUERY_STRING} (boot\.ini|etc/passwd|self/environ) [NC,OR]
+    RewriteCond %{QUERY_STRING} (SELECT|UNION|INSERT|DELETE|DROP|ALTER|CREATE|UPDATE) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+AddType application/javascript .js
+AddType text/javascript .mjs
+AddType text/css .css
+AddType image/png .png
+AddType image/jpeg .jpg .jpeg
+AddType image/svg+xml .svg
+AddType application/font-woff2 .woff2
+AddType application/font-woff .woff
+AddType application/json .json
+
+<IfModule Litespeed>
+    SetEnv JWT_KEY 'sab bata do'
+</IfModule>
