@@ -13,25 +13,22 @@ const db = require("./config/mongoose-connection");
 
 const app = express();
 
-// ========== Security & Performance Middlewares ========== //
 app.use(helmet());
 app.use(compression());
-app.set('trust proxy', 1); // For secure cookies in production
+app.set('trust proxy', 1);
 
-// Rate Limiting (Prevent DDoS/Spam)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests, please try again later.',
-  skip: (req) => req.path === '/api/v1/health' // Skip health checks
+  skip: (req) => req.path === '/api/v1/health'
 });
 app.use(limiter);
 
-// ========== CORS Configuration (Allow Frontend Domain) ========== //
 const allowedOrigins = [
-  "http://localhost:5173",                     // Local dev
-  "https://khata.martendigitals.com",          // Your live frontend
-  "https://khata-system.vercel.app"            // Backup domain
+  "http://localhost:5173",                     
+  "https://khata.martendigitals.com",          
+  "https://khata-system.vercel.app"            
 ];
 
 app.use(cors({
@@ -46,12 +43,10 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"]
 }));
 
-// ========== Body Parsing & Cookies ========== //
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
-// ========== Session Configuration ========== //
 app.use(
   expressSession({
     name: "session",
@@ -60,11 +55,11 @@ app.use(
     secret: process.env.JWT_KEY,
     store: MongoStore.create({
       client: db.getClient(),
-      ttl: 24 * 60 * 60 // 1 day
+      ttl: 24 * 60 * 60
     }),
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // HTTPS-only in production
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookies
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       domain: process.env.NODE_ENV === 'production' ? '.martendigitals.com' : undefined,
     }
   })
@@ -72,7 +67,6 @@ app.use(
 
 app.use(flash());
 
-// ========== API Routes ========== //
 const apiBase = "/api/v1";
 const routers = [
   require("./routes/delete"),
@@ -101,7 +95,6 @@ app.use(`${apiBase}/all`, routers[6]);
 //   });
 // });
 
-// ========== Error Handling ========== //
 app.use((err, req, res, next) => {
   if (err.message.includes('CORS')) {
     return res.status(403).json({ error: "Origin not allowed" });
@@ -109,7 +102,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Server error" });
 });
 
-// Start Server
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`✅ Pure API backend running on port ${PORT}`);
