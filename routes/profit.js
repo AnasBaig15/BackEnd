@@ -1,31 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const { Profit } = require("../modals/profit");
-const mongoose = require("mongoose");
 
-router.get("/:userId", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const allProfits = await Profit.find().sort({ userId: 1 }); 
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID format" });
-    }
-
-    let profitData = await Profit.findOne({ userId: new mongoose.Types.ObjectId(userId) });
-
-    if (!profitData) {
-      profitData = new Profit({
-        userId: new mongoose.Types.ObjectId(userId),
-        totalCredit: 0,
-        totalDebit: 0,
-      });
-      await profitData.save();
-    }
-
-    res.json(profitData);
+    res.status(200).json(allProfits);
   } catch (error) {
+    console.error("Error fetching all profits:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 module.exports = router;
+

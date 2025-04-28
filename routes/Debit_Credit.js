@@ -74,21 +74,18 @@ router.post("/add", authenticate, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-router.get("/:userId", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID format" });
-    }
-
-    const transactions = await Transaction.find({ userId }).sort({ date: -1 });
+    const transactions = await Transaction.find()
+      .populate("userId", "fullname")
+      .sort({ date: -1 });
 
     res.status(200).json(transactions);
-  } catch (error) {
-    console.error("Error fetching transactions:", error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (err) {
+    console.error("❌ [GET /transactions] error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;
